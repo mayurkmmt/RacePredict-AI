@@ -1,0 +1,136 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Race Predictor{% endblock %}</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link id="flatpickr-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/light.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Clean External Stylesheet -->
+    <link rel="stylesheet" href="{% static 'racing/css/dashboard.css' %}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo">
+                <i class="fa-solid fa-horse-head"></i>
+                <span class="brand-text">Race Predict AI</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{% url 'racing:dashboard_ui' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard_ui' %}active{% endif %}" title="Dashboard">
+                <i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="{% url 'racing:race_center_ui' %}" class="nav-item {% if request.resolver_match.url_name == 'race_center_ui' %}active{% endif %}" title="Race Center">
+                <i class="fa-solid fa-flag-checkered"></i> <span class="nav-text">Race Center</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="version-text">v1.1.0</div>
+            <div class="copyright-text">&copy; {% now "Y" %} Race Predict AI<br>All rights reserved.</div>
+        </div>
+    </aside>
+
+    <!-- CONTENT WRAPPER -->
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+    <div class="main-wrapper">
+
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-left" style="display: flex; align-items: center; gap: 15px;">
+                <button class="icon-btn desktop-toggle" id="sidebar-toggle" title="Toggle Sidebar">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <button class="icon-btn mobile-toggle" id="mobile-toggle" title="Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <h2 class="page-title" id="top-title" style="margin: 0;">{% block page_heading %}Overview{% endblock %}</h2>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn" id="theme-toggle" title="Toggle Theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- PAGE CONTENT -->
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <script>
+        // --- CORE NAVIGATION LOGIC ---
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const mobileToggle = document.getElementById('mobile-toggle');
+        const mobileOverlay = document.getElementById('mobile-overlay');
+
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebar.classList.add('collapsed');
+        }
+
+        if(sidebarToggle) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+            });
+        }
+        if(mobileToggle) {
+            mobileToggle.addEventListener('click', () => {
+                sidebar.classList.add('mobile-open');
+                mobileOverlay.classList.add('active');
+            });
+        }
+        if(mobileOverlay) {
+            mobileOverlay.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-open');
+                mobileOverlay.classList.remove('active');
+            });
+        }
+
+        // --- THEME TOGGLE LOGIC ---
+        const themeBtn = document.getElementById('theme-toggle');
+        const htmlRoot = document.documentElement;
+        const flatpickrStyle = document.getElementById('flatpickr-theme');
+        let chartInstance = window.chartInstance || null;
+
+        // Setup initial icon on load
+        if(localStorage.getItem('theme') === 'dark') {
+            themeBtn.querySelector('i').className = 'fa-solid fa-sun';
+            if(flatpickrStyle) flatpickrStyle.href = "https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css";
+        }
+
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = htmlRoot.getAttribute('data-theme');
+            const icon = themeBtn.querySelector('i');
+            if (currentTheme === 'light') {
+                htmlRoot.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                icon.className = 'fa-solid fa-sun';
+                if(flatpickrStyle) flatpickrStyle.href = "https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css";
+            } else {
+                htmlRoot.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                icon.className = 'fa-solid fa-moon';
+                if(flatpickrStyle) flatpickrStyle.href = "https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/light.css";
+            }
+            if(window.updateChartTheme) window.updateChartTheme();
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,88 @@
+{% extends 'racing/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard | AI Race Predictor{% endblock %}
+{% block page_heading %}Dashboard{% endblock %}
+
+{% block content %}
+<main class="view-content" id="view-dashboard"
+      data-monthly="{{ monthly_counts_json|default:'[]' }}"
+      data-jockey-names="{{ jockey_names_json|default:'[]' }}"
+      data-jockey-wins="{{ jockey_wins_json|default:'[]' }}"
+      data-trainer-names="{{ trainer_names_json|default:'[]' }}"
+      data-trainer-wins="{{ trainer_wins_json|default:'[]' }}"
+      data-age-labels="{{ age_labels_json|default:'[]' }}"
+      data-age-data="{{ age_chart_data_json|default:'[]' }}">
+    <div class="stats-grid">
+        <div class="rc-card stat-card blue">
+            <div class="stat-title">Total Races</div>
+            <div class="stat-value">{{ total_races|default:"0" }}</div>
+            <div class="stat-sub" style="color: var(--text-muted)"><i class="fa-solid fa-flag-checkered"></i> Total historical races</div>
+        </div>
+        <div class="rc-card stat-card green">
+            <div class="stat-title">Total Horses</div>
+            <div class="stat-value">{{ total_horses|default:"0" }}</div>
+            <div class="stat-sub" style="color: var(--text-muted)"><i class="fa-solid fa-horse"></i> Registered globally</div>
+        </div>
+        <div class="rc-card stat-card orange">
+            <div class="stat-title">Total Jockeys</div>
+            <div class="stat-value">{{ total_jockeys|default:"0" }}</div>
+            <div class="stat-sub" style="color: var(--text-muted)"><i class="fa-solid fa-user-ninja"></i> Across all tracks</div>
+        </div>
+        <div class="rc-card stat-card red">
+            <div class="stat-title">Total Trainers</div>
+            <div class="stat-value">{{ total_trainers|default:"0" }}</div>
+            <div class="stat-sub" style="color: var(--text-muted)"><i class="fa-solid fa-user-tie"></i> Across all regions</div>
+        </div>
+        <div class="rc-card stat-card blue">
+            <div class="stat-title">Total Courses</div>
+            <div class="stat-value">{{ total_courses|default:"0" }}</div>
+            <div class="stat-sub" style="color: var(--text-muted)"><i class="fa-solid fa-map-location-dot"></i> Known venues</div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="rc-card">
+            <div class="chart-header">
+                <h3>Total Races by Month (2020)</h3>
+            </div>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+        <div class="rc-card">
+            <div class="chart-header">
+                <h3>Top 5 Winning Jockeys</h3>
+            </div>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="jockeyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row" style="margin-top: 1.5rem;">
+        <div class="rc-card">
+            <div class="chart-header">
+                <h3>Top 5 Winning Trainers</h3>
+            </div>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="trainerChart"></canvas>
+            </div>
+        </div>
+        <div class="rc-card">
+            <div class="chart-header">
+                <h3>Horse Age Distribution</h3>
+            </div>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="ageChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'racing/js/dashboard.js' %}"></script>
+{% endblock %}

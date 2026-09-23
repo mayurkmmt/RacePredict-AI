@@ -1,0 +1,229 @@
+{% extends 'racing/base.html' %}
+
+{% block title %}Race Inference Center | AI Race Predictor{% endblock %}
+{% block page_heading %}Race Inference Center{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+<main class="view-content" id="view-race">
+    <div class="rc-card controls-layout">
+        <div class="input-group">
+            <label>Date Selection (2020)</label>
+            <input type="text" id="date-selector" class="custom-input" placeholder="Choose a date...">
+        </div>
+        <div class="input-group">
+            <label>Select Race</label>
+            <select id="race-selector" class="custom-input" disabled>
+                <option value="">-- First select a date --</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="loader" id="loader"></div>
+
+    <div class="comparison-layout hidden" id="results-panel">
+        <div class="rc-card result-panel">
+            <div class="result-title pred"><i class="fa-solid fa-robot"></i> Predicted Winners</div>
+            <div class="horse-list" id="list-pred"></div>
+        </div>
+        <div class="rc-card result-panel">
+            <div class="result-title act"><i class="fa-solid fa-trophy"></i> Actual Results</div>
+            <div class="horse-list" id="list-act"></div>
+        </div>
+    </div>
+
+    <div class="rc-card race-full-details hidden" id="details-panel">
+        <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> Race Details
+        </h3>
+
+        <div class="details-grid">
+            <div class="d-item"><div class="d-label">Course</div><div class="d-value" id="val-course">-</div></div>
+            <div class="d-item"><div class="d-label">Time</div><div class="d-value" id="val-time">-</div></div>
+            <div class="d-item"><div class="d-label">Distance</div><div class="d-value" id="val-distance">-</div></div>
+            <div class="d-item"><div class="d-label">Class</div><div class="d-value" id="val-class">-</div></div>
+            <div class="d-item"><div class="d-label">Condition</div><div class="d-value" id="val-condition">-</div></div>
+            <div class="d-item"><div class="d-label">Prize</div><div class="d-value" id="val-prize">-</div></div>
+        </div>
+
+        <h4 style="margin-bottom: 1rem; font-size: 1.05rem; font-weight: 600;">Runners & Riders</h4>
+        <div class="table-responsive">
+            <table class="d-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Horse</th>
+                        <th>Jockey</th>
+                        <th>Trainer</th>
+                        <th>Age</th>
+                        <th>WGT</th>
+                        <th>Odds</th>
+                        <th>RPR</th>
+                    </tr>
+                </thead>
+                <tbody id="entries-tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script>
+    // --- RACE & DATA LOGIC ---
+    let raceChoices = null;
+    document.addEventListener('DOMContentLoaded', () => {
+        const raceEl = document.getElementById('race-selector');
+        window.raceChoices = new Choices(raceEl, {
+            searchEnabled: true,
+            itemSelectText: '',
+            shouldSort: false,
+            placeholderValue: '-- First select a date --'
+        });
+    });
+    const validDates = {{ valid_dates_json|default:"[]"|safe }};
+    const minRaceDate = validDates.length > 0 ? validDates[0] : "2020-01-01";
+    const maxRaceDate = validDates.length > 0 ? validDates[validDates.length - 1] : "2020-12-31";
+
+    flatpickr("#date-selector", {
+        minDate: minRaceDate,
+        maxDate: maxRaceDate,
+        enable: validDates,
+        dateFormat: "Y-m-d",
+        onChange: function(selectedDates, dateStr, instance) {
+            fetchRacesForDate(dateStr);
+        }
+    });
+
+    const raceSelector = document.getElementById('race-selector');
+    const loader = document.getElementById('loader');
+    const resultsPanel = document.getElementById('results-panel');
+    const detailsPanel = document.getElementById('details-panel');
+
+    const listPred = document.getElementById('list-pred');
+    const listAct = document.getElementById('list-act');
+    const tbody = document.getElementById('entries-tbody');
+
+    const fetchRacesForDate = async (dateStr) => {
+        if(window.raceChoices) {
+            window.raceChoices.clearStore();
+            window.raceChoices.clearChoices();
+            window.raceChoices.disable();
+        }
+        hideResults();
+
+        try {
+            const resp = await fetch(`/races/by-date/?date=${dateStr}`);
+            const data = await resp.json();
+
+            const formattedChoices = [{value: 'default', label: '-- Choose a race --', selected: true, customProperties: {placeholder: true}}];
+
+            if(data.races.length > 0) {
+                data.races.forEach(r => {
+                    formattedChoices.push({value: r.id, label: r.title});
+                });
+                if(window.raceChoices) {
+                    window.raceChoices.setChoices(formattedChoices, 'value', 'label', true);
+                    window.raceChoices.enable();
+                }
+            } else {
+                if(window.raceChoices) {
+                    window.raceChoices.setChoices([{value: 'default', label: 'No races found for this date.', selected: true, customProperties: {placeholder: true}}], 'value', 'label', true);
+                }
+            }
+        } catch(e) {
+            console.error('Error fetching races:', e);
+            if(window.raceChoices) {
+                window.raceChoices.setChoices([{value: 'default', label: 'Failed to load races', selected: true, customProperties: {placeholder: true}}], 'value', 'label', true);
+            }
+        }
+    };
+
+    raceSelector.addEventListener('change', (e) => {
+        const raceId = e.target.value;
+        if(raceId && raceId !== 'default') {
+            loadPredictionData(raceId);
+            loadRaceDetails(raceId);
+        } else {
+            hideResults();
+        }
+    });
+
+    const hideResults = () => {
+        resultsPanel.classList.add('hidden');
+        detailsPanel.classList.add('hidden');
+    };
+
+    const loadPredictionData = async (raceId) => {
+        hideResults();
+        loader.style.display = 'block';
+
+        try {
+            const resp = await fetch(`/races/${raceId}/predict/`);
+            const data = await resp.json();
+
+            renderHorseList(listPred, data.predicted, true);
+            renderHorseList(listAct, data.actual, false);
+
+            loader.style.display = 'none';
+            resultsPanel.classList.remove('hidden');
+        } catch(e) {
+            console.error('Prediction failed', e);
+            loader.style.display = 'none';
+        }
+    };
+
+    const renderHorseList = (container, horses, isPred = false) => {
+        container.innerHTML = '';
+        horses.forEach(h => {
+            const probHtml = isPred ? `<div class="h-prob">Win Prob: ${h.prob}%</div>` : '';
+            container.innerHTML += `
+                <div class="horse-item pos-${h.position}">
+                    <div class="h-pos">${h.position}</div>
+                    <div class="h-details">
+                        <div class="h-name">${h.horse_name}</div>
+                        ${probHtml}
+                    </div>
+                </div>
+            `;
+        });
+    };
+
+    const loadRaceDetails = async (raceId) => {
+        try {
+            const resp = await fetch(`/races/${raceId}/details/`);
+            const data = await resp.json();
+
+            document.getElementById('val-course').textContent = data.course;
+            document.getElementById('val-time').textContent = data.time;
+            document.getElementById('val-distance').textContent = data.distance;
+            document.getElementById('val-class').textContent = data.race_class;
+            document.getElementById('val-condition').textContent = data.condition;
+            document.getElementById('val-prize').textContent = data.prize || 'N/A';
+
+            tbody.innerHTML = '';
+            data.entries.forEach((e) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${e.saddle}</strong></td>
+                        <td style="font-weight: 500">${e.horse}</td>
+                        <td>${e.jockey}</td>
+                        <td>${e.trainer}</td>
+                        <td>${e.age}</td>
+                        <td>${e.weight}</td>
+                        <td>${e.odds}</td>
+                        <td><strong>${e.rpr}</strong></td>
+                    </tr>
+                `;
+            });
+
+            detailsPanel.classList.remove('hidden');
+        } catch(e) {
+            console.error("Failed to load race details", e);
+        }
+    };
+</script>
+{% endblock %}
