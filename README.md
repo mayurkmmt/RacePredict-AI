@@ -2,7 +2,7 @@
 
 RacePredict-AI is an advanced, machine-learning-powered Django application designed for forecasting horse race outcomes. By utilizing historical race data (1990-2020) and a trained XGBoost model, this system delivers predictive analytics and high-performance metrics through a sleek, professional web interface.
 
-<video src="video/RacePredict-AI.webm" width="800" controls autoplay loop muted></video>
+![RacePredict-AI Demo](video/RacePredict-AI.webm)
 
 ## ✨ Features
 
@@ -33,7 +33,7 @@ Before setting up the project locally, guarantee you have:
 
 1. **Clone the repository:**
    ```bash
-   git clone <your-repository-url>
+   git clone https://github.com/mayurkmmt/RacePredict-AI.git
    cd RacePredict-AI
    ```
 
