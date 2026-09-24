@@ -2,6 +2,8 @@
 
 RacePredict-AI is an advanced, machine-learning-powered Django application designed for forecasting horse race outcomes. By utilizing historical race data (1990-2020) and a trained XGBoost model, this system delivers predictive analytics and high-performance metrics through a sleek, professional web interface.
 
+<video src="video/RacePredict-AI.webm" width="800" controls autoplay loop muted></video>
+
 ## ✨ Features
 
 - **Machine Learning Engine**: Employs an XGBoost model (`xgboost_model.pkl`) alongside specialized categorical encoders (`encoders.pkl`) to predict race outcomes and probabilities accurately based on historical metrics.
